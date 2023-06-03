@@ -1,0 +1,27 @@
+\section{Generalized Policy Iteration (GPI)}
+
+
+ Virtually every reinforcement learning (RL) control algorithm has its roots in the fundamental principle of Generalized Policy Iteration (GPI). 
+ However, the exact implementation of GPI varies and differs from one algorithm to another. 
+ Therefore, prior to delving into the specifics of RL Control algorithms, its crucial to thoroughly understand the overarching concept of GPI. 
+
+The term Generalized Policy Iteration (GPI) refers to the approach of interweaving Policy-Evaluation and Policy-Improvement procedures. 
+GPI  assess the Value function for a given policy, $\pi$, using any Policy Evaluation method, and subsequently improves the policy using any Policy Improvement method.
+
+That is, the policy is consistently improves itself in relation to the Value Function, while the Value Function moves towards the Value Function corresponding to the policy.
+If both the evaluation process and improvement process reach an equilibrium (i.e., no further changes transpire), then the resulting policy and Value Function must be optimal. 
+
+The value function achieves stability once it aligns with the current policy, whereas, the policy stabilizes only when it becomes greedy with respect to the the current value function. Consequently, both processes only reach equilibrium when a policy that is greedy with respect to its own evaluation function is discovered. This implies that the Bellman optimally equation is satisfied, which in turn implies that both the policy and the Value Function are optimal. 
+
+
+Within the Generalized Policy Iteration framework, both an approximate policy and approximate value function are maintained. The Value Function is continually modified to more closely approximate the true Value Function of the current policy, while the policy is perpetually improved in relation to the existing Value Function.  While these two modifications are somewhat counteractive -- each sets a dynamic target for the other --  their combined effect drives both the policy and Value Function towards optimally. Policy evaluation is executed through experiences numerous epsisodes, with the approximate Value Function converging to the true function asymptotically. 
+
+
+
+
+One of the most important features of GPI machinery is its ability to accommodate a `partial' Policy Improvement. 
+The term `partial' here implies a wide-ranging set of computations, any of which contributes to either a full Policy Evaluation or that takes us towards a Policy Improvement.
+Hence, GPI offers the flexibility to transition between Policy Evaluation and Policy  Improvement without the necessity for completely exhaustive Policy  Evaluation or complete Policy Imporvement, for example, we do not have to wait for Policy Evaluation computations to fully converge. 
+
+
+

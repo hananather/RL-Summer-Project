@@ -1,8 +1,4 @@
-\section{Introduction}
-\subsection{What is Reinforcement Learning?}
-Reinforcement Learning (RL) is a subfield of artificial intelligence that centers around an agent learning to make optimal decisions by interacting with its environment, receiving feedback in the form of rewards or penalties, and adjusting its behavior accordingly to maximize cumulative rewards over time \cite{RL}. In this process, the agent gathers information through actions and interactions with the environment, with its performance evaluated by the rewards it receives, which it ultimately aims to maximize.
-
-Upon taking an action, the agent obtains two pieces of information: its present state within the environment and a real-valued reward \cite{RL2}. The agent's goal is to maximize its reward, thereby determining the most effective sequence of actions, or policy, to accomplish its objective. 
+\section{Preliminary Definitions in RL}
 \begin{figure}
     \centering
     \tikzstyle{block} = [rectangle, draw, fill=blue!20,
@@ -21,15 +17,6 @@ Upon taking an action, the agent obtains two pieces of information: its present 
     \caption{The MDP Framework: As illustrated in the figure, the agent, which represents an AI algorithm, and the environment, an abstract entity delivering uncertain outcomes, engage in a time-sequenced, iterative interaction. Credit: Adapted from Sutton \& Barto, 2018 \cite{RL} }
     \label{fig:my_label}
 \end{figure}
-
-
-\subsection{Supervised, Unsupervised, and Reinforcement Learning}
-In contrast to supervised learning, where the learner trains passively using labeled data, reinforcement learning involves active engagement with the environment, and the policy chosen defines the distribution over observations rather than relying on a fixed distribution \cite{jordan2015}. Minor alterations to the policy can significantly impact the rewards obtained, highlighting the dynamic nature of reinforcement learning. Additionally, the environment may not remain constant and could change due to the actions selected by the agent \cite{buehler2019}. Reinforcement learning also differs from supervised learning in that training and testing phases are intertwined, rather than being separate stages of the process \cite{RL2}. 
-Unlike other branches of machine learning, such as supervised and unsupervised learning, reinforcement learning embodies a more ambitious approach. It not only extracts patterns and properties from the given data, but also discerns suitable behaviors and decisions to progress towards the desired optimization objective \cite{RL}. One could argue that supervised and unsupervised learning primarily concentrate on ``minimization," as they strive to minimize the fitting error of a model to the provided data. Conversely, reinforcement learning focuses on ``maximization," seeking to identify the most appropriate decisions that contribute to the maximization of a well-defined objective.
-
-In reinforcement learning, the agent confronts a dilemma between exploring unfamiliar states and actions to gather more information about the environment and rewards, and exploiting the existing information to optimize its reward. This challenge, known as the exploration versus exploitation trade-off \cite{RL2}, is a fundamental aspect of the reinforcement learning process.
-
-\section{Basic Components of Reinforcement Learning}
 \subsection{Markov Decision Process}
 A Markov Decision Process (MDP) is a mathematical framework used in reinforcement learning to model decision-making in situations where an agent interacts with an environment that has probabilistic state transitions and rewards \cite{Markov}. 
 
@@ -85,18 +72,38 @@ An important fact to note is that even though this is an infinite sum, if $\gamm
 \end{align}
 By breaking down the computation of expected returns into smaller, incremental steps, the recursive property enables efficient updating of value estimates during the learning process. This is particularly useful in temporal difference learning methods, such as Q-learning and SARSA, where the value function is updated incrementally after each transition. This recursive property allows RL algorithms to leverage current estimates of future returns, $G_{t+1}$, to improve the current value estimate $G_t$. This process, known as bootstrapping, helps algorithms converge faster by taking advantage of information already available, rather than waiting to accumulate the complete return through the end of an episode. We will delve deeper into this idea in Section \ref{Algo}, where we explore Temporal Difference learning and Q-learning.
 
+\subsection{Goal of Reinforcement Learning}
+
+In reinforcement learning, we define the agent's experience as a trajectory, which includes a sequence of states, actions, and rewards. At each time step $t$, the agent is in a state $s_t$ and takes action $a_t$ according to policy $\pi(a_t \mid s_t)$, and transition probabilities to a new state $s_{t+1}$ according to environment's transition probabilities $p(s_{t+1} \mid s_{t}, a_{t})$. A reward $r_t$ is also received.
+\begin{align*}
+    p_{\theta}(\boldsymbol{s}_1, \boldsymbol{a}_1, \cdots ,\boldsymbol{s}_T, \boldsymbol{a}_T) = p(\boldsymbol{s}_1) \prod_{t=1}^{T} \pi_{\theta}(\boldsymbol{a}_{t} \mid \boldsymbol{s}_t) p(\boldsymbol{s}_{t+1} \mid \boldsymbol{s}_t)
+\end{align*}
+
+
+A trajectory, also called an episode, is sequence of states, actions and rewards from the start to the end of an episode. The distribution over trajectories under policy $\pi_\theta$ is given by the product of an initial state distribution, the policy probabilities for the actions, and the environment's transition probabilities for the state. 
+
+\begin{align*}\label{RL-Objective}
+    \theta^{\star} = \arg \max_{\theta} \EE_{\tau \sim p_{\theta}(\tau)} \left[ 
+    \sum_{t} r(\boldsymbol{s}_t, \boldsymbol{a}_t)
+    \right]
+\end{align*}
+
+The objective in reinforcement learning is to find the policy parameters $\theta$ of a policy $\pi{\theta}(a_t \mid s_t)$, which is a conditional distribution over actions $a_t$ conditioned states $s_t$, with respect to the expectation of a reward function $r(s_t, a_t)$. 
+
+Our goal is to maximize the expected return, where the return is defined as the sum of rewards over trajectory. The expectation here is taken over the distribution of trajectories. The objective reflects the goal of finding a policy that, on average, produces trajectories with high rewards as possible, taking into account the randomness in the policy, the environment's transitions, and the initial state distribution. 
+
 \subsection{Value and State-Value Functions}
 
 Now we can define the notion of ``value of a state" formally via \vocab{value functions}. Value functions in RL are tools for estimating the long-term `value' or desirability of being in a given state. They allow the agent to access how good it is to be in a certain state, based on the expected cumulative reward obtained from that point onwards. There are two types of value functions commonly used in reinforcement learning: $V^{\pi}(s)$ and $Q^{\pi}(s,a)$, we define them formally below \cite{RL}, \cite{mohri2018}:
 \begin{definition}[Value function]
     The value $V^{\pi}(s)$ for a fixed policy $\pi$ at a given state $s \in S$ represents the expected reward obtained when initiating at state $s$ and adhering to policy $\pi:$
     \begin{itemize}
-        \item $V^{\pi}(s) = \underset{\pi, p}{\EE} [G_t \mid S_t = s]$for all $s \in S$ \cite{RL}
-        \item finite horizon: $V^{\pi}(s) = \underset{a_t \sim \pi(s_t)}{\EE} \left[ \sum_{t=0}^T r(s_t,a_t) \mid S_t =s
+        \item $V^{\pi}(s) = \underset{\pi_{theta}}{\EE} [G_t \mid S_t = s]$for all $s \in S$ \cite{RL}
+        \item finite horizon: $V^{\pi}(s) = \underset{\pi_{\theta}}{\EE} \left[ \sum_{t=0}^T r(s_t,a_t) \mid S_t =s
         \right]$ \cite{mohri2018}
-        \item infinite discounted horizon: $V^{\pi}(S_t = s) = \underset{a_t \sim \pi(s_t)}{\EE} \left[ \sum_{t=0}^{+ \infty} \gamma^t r(s_t,a_t) \mid S_t =s
+        \item infinite discounted horizon: $V^{\pi}(S_t = s) = \underset{\pi_{\theta}}{\EE} \left[ \sum_{t=0}^{+ \infty} \gamma^t r(s_t,a_t) \mid S_t =s
         \right]$ \cite{mohri2018}     \footnote{Technically the notation should be: $\EE_{a_t \sim \pi(s_t)} \EE_{s_t}$ since
-    we are not just taking the expectation over the random selection of an action $a_t$ according to the distribution $\pi(s_t)$, but we are also taking the expectation over the states $s_t$ reached and the corresponding reward values $r(s_t, a_t)$. However, in RL literature/textbooks the randomization with respect to the next state and reward function doesn't seem to be  explicitly mentioned (to simplify notation perhaps)} 
+    we are not just taking the expectation over the random selection of an action $a_t$ according to the policy distribution $\pi(a_t \mid s_t)$, but we are also taking the expectation over the states $s_t$ reached and the corresponding reward values $r(s_t, a_t)$. However, in RL literature/textbooks the randomization with respect to the next state and reward function doesn't seem to be  explicitly mentioned (to simplify notation perhaps)} 
     \end{itemize}
 \end{definition}
 An intuitive way of understanding Value Function is that it tells us how much ``accumulated future reward'' we expect to obtain from a given state.
@@ -110,11 +117,14 @@ We can prove that this optimal policy $\pi^*$ is deterministic \cite{mohri2018},
 \begin{definition}[State-action value function]
     The state-action value function $Q$ associated to a policy $\pi$ is defined for all $(s,a) \in S \times A$ as the expected return for taking action $a \in A$ at state $s \in S$ and then following policy $\pi$:
     \begin{align*}
-    Q^{\pi}(s,a) &=  \underset{\pi}{\EE} [G_t \mid S_t =s, A_t = a]  = \underset{\pi}{\EE}
+    Q^{\pi}(s_t,a_t) &=  \underset{\pi_{\theta}}{\EE} [G_t \mid S_t =s, A_t = a]  = \underset{\pi}{\EE}
     \left [
-    \sum_{k =0}^{+ \infty} \gamma^t R_{t+k+1} \mid S_t = s, A_t = a \right ]
+    \sum_{k =0}^{+ \infty} \gamma^t r(s_{k}, a_k) \mid S_t = s, A_t = a \right ]
     \end{align*}
 \end{definition}
+$$
+V^{\pi}(s_t) = \EE_{a_t \sim \pi(a_t \mid s_t)}[Q^{\pi}(s_t, a_t)]
+$$
 The motivation behind using value functions in RL is to guide the agents decision-making process. By estimating the values of states or state-action pairs, the agent can choose actions that lead to states with higher-long term rewards. We will see in next section that values serve as the basis for various RL algorithms, such as $Q-$learning and SARSA.
 
 Value functions $V^{\pi}$ and $Q^{\pi}$ can be estimated through experience. For instance, if an agent follows policy $\pi$ and maintains an average for each state encountered, based on the actual returns following that state, these averages will converge to $V^{\pi}(s)$ for all $s \in S$ as the number of times the state is encountered approaches infinity.

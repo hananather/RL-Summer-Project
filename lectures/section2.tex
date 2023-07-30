@@ -2,15 +2,32 @@
 
 
 
-
 Thus far we have been under the assumption that we have access to a model of the Markov Decision Process (MDP) environment, which includes transition states defined by $\mathcal{S}$ and the probabilities of the next state and reward given the current state and action\footnote{By model we mean the transition states define by $\SP$, probabilities of next state and reward, given current state and reward}.
 However, in real-world scenarios, we often lack access to an MDP model. 
 When we don't have a model, we don't have access to the environment's dynamics such as transition probabilities, $\PP(S_{t+1} \mid S_t , A_t)$, or rewards functions $r(s_{t+1}, a_t, s_t)$ . Consequently, we cannot predict the next state and the immediate reward you will receive when taking a specific action in a given state. 
 Instead, the agent must interact with the actual MDP environment to learn about it. Interacting with the environment doesn't provide transition probabilities; it simply presents a new state and reward when an action is taken in a specific state. The environment supplies individual experiences of the next state and reward, rather than the explicit probabilities of occurrence for the next states and rewards. This raises a pertinent question: is it possible to compute the optimal value function or optimal policy without access to a model?
 
 \subsection{Model-based and Model-free learning}
-In RL literature, there are primarily two approaches:  Model-based and Model-free learning \cite{RL3}. In model-based learning approaches, the agent first learn a model of the environment before proceeding to learn a policy \cite{RL2}. In this approach, the agent creates an internal model of the environment, including its rules and dynamics. Once this model is established, the agent then uses it as a guide to learn and refine an  policy. This approach can be more computationally demanding, but it often leads to a more robust and flexible policy, because the agent can use its understanding of the environment to plan and adapt its actions to different situations \cite{RL}.
-Model-free approach, involves directly acquiring an action policy without necessarily understanding the underlying dynamics of the environment. The learning agent learns the environment based on the rewards it receives, without developing a comprehensive understanding of how the environment actually works \cite{RL3}. The Q-learning algorithm  discussed in the next section belongs to the group of model-free methods.
+In the literature of reinforcement learning (RL), the learning approaches can be classified primarily into two categories: \vocab{Model-based learning} and \vocab{Model-free learning} \cite{RL3}. In model-based learning approaches, the agent's strategy is to learn a model of the environment before deriving a policy. The agent creates an internal representation of the environment, encapsulating its rules and dynamics. As we have seen previously, a model of an environment in RL is most commonly defined as:
+\[
+P_{ss'}^{a} = \PP(s_{t+1}=s' \mid s_t=s, a_t=a)
+\]
+\[R_{ss'}^{a} = \mathbb{E}[r_{t+1} \mid s_t=s, a_t=a, s_{t+1}=s']
+\]
+
+Where $P_{ss'}^{a}$ is the transition probability from state $s$ to $s'$ under action $a$, and $R_{ss'}^{a}$ is the expected immediate reward when transitioning from $s$ to $s'$ with action $a$.
+
+Once the model is well established, the agent utilizes it as a guide to derive and refine its policy \cite{RL2}. Although this approach might be more computationally demanding, it often results in a more robust and flexible policy, since the agent can exploit its comprehension of the environment to plan and adapt its actions across various situations \cite{RL}.
+
+On the other hand, model-free learning approaches involve acquiring an action policy directly, without developing a detailed understanding of the underlying dynamics of the environment. In this case, the learning agent interacts with the environment based on the rewards it receives, instead of constructing a comprehensive model of how the environment operates.
+
+An instance of model-free methods is the Q-learning algorithm. It learns an action-value function $Q(s,a)$, that gives the expected utility of taking a certain action $a$ in a certain state $s$, defined as \cite{RL3}:
+
+\[
+Q(s,a) = \mathbb{E}[r_t + \gamma Q(s_{t+1}, a_{t+1}) \mid s_t=s, a_t=a]
+\]
+
+The agent uses the Q-values to make decisions, but without explicitly constructing a model of the environment's dynamics. This property makes model-free methods less computationally expensive compared to their model-based counterparts, albeit at the cost of having less potential to adapt to changes in the environment.
 
 
 
@@ -33,6 +50,90 @@ In on-policy methods, the behaviour policy and the target policy are the same. T
 \end{itemize}
  The benefit of off-policy methods is that they allow you to learn an optimal policy while following exploratory policy for better learning. In contrast, on-policy methods might converge faster because they are always learning about the policy they are following, but they need to balance exploration and exploitation with the policy they are learning about. 
 
+\subsection{Dynamic Programing}
+Dynamic Programming (DP) is a mathematical approach used to solve complex problems by breaking them down into simpler subproblems. It is particularly effective when the problem has overlapping subproblems and optimal substructure. In the context of Reinforcement Learning, the two main DP algorithms are \vocab{Policy Iteration} and \vocab{Value Iteration}. These algorithms involve the evaluation and improvement of policies in order to find the optimal policy that maximizes the expected cumulative reward.
+
+
+The mathematical formulation for these algorithms involves the Bellman equations. For a given policy $\pi$, the value function $V^\pi$ is defined as the expected return from each state, and satisfies the following Bellman equation for policy evaluation:
+
+\begin{equation}
+V^\pi(s) = \sum_{a} \pi(s,a) \sum_{s',r} \PP(s',r|s,a) \left[r + \gamma V^\pi(s')\right], \quad \forall s \in \mathcal{S}
+\end{equation}
+where $\PP$ represents the state transition probability, and $\gamma$ is the discount factor that determines the present value of future rewards.
+
+In Policy Iteration, we alternately evaluate the current policy using the Bellman equation for policy evaluation, and improve the policy by making it greedy with respect to the current value function:
+
+\begin{equation}
+\pi'(s) = \arg \max_{a} \sum_{s',r} p(s',r|s,a) \left[r + \gamma V^\pi(s')\right], \quad \forall s \in \mathcal{S}
+\end{equation}
+Value Iteration combines the policy evaluation and policy improvement steps into a single update:
+
+\begin{equation}
+V_{k+1}(s) = \max_{a} \sum_{s',r} p(s',r|s,a) \left[r + \gamma V_{k}(s')\right], \quad \forall s \in \mathcal{S}
+\end{equation}
+The iterations continue until the value function (or the policy in policy iteration) converges, and the final value function represents the maximum expected return from each state, under the optimal policy.
+
+In practical scenarios, Dynamic Programming (DP) is not commonly used to solve Reinforcement Learning problems. This is primarily due to the following reasons:
+\begin{itemize}
+    \item It's challenging to extend DP to handle continuous actions and states. DP methods typically require discretized states and actions, which can be impractical or infeasible for many real-world problems.
+    \item DP methods necessitate access to the environment's model, specifically, the transition probabilities $P_{ss'}^a$. In reality, such detailed information about the environment is rarely available. Instead, we can only obtain samples from the environment by interacting with it and collecting experiences. These experiences can then be used to approximate the expectations via sampling-based methods, such as Temporal Difference (TD) learning methods.
+\end{itemize}
+However, there are advantages to using DP, including: DP methods provide mathematically precise solutions that can be formally expressed and analyzed. For smaller-scale problems, with a few thousand states or few tens to hundreds of actions, DP could be the most suitable method. It offers stability, simplicity, and straightforward convergence guarantees.
+While DP isn't always practical for larger or continuous problems, the concepts it introduces are foundational to understanding more advanced reinforcement learning techniques we will be looking in the next section(s).
+
+\subsection{Monte Carlo Learning}
+Monte Carlo (MC) methods in reinforcement learning involve learning from complete sample returns. For a given policy, $\pi$, MC methods estimate the value-function $v_{\pi}(s)$ or $q_{\pi}(s,a)$  as the average of the returns observed in a number of episodes. 
+
+The return $G_t$ at a time-step $t$ in an episode is defined as the cumulative discounted reward from that time-step onwards:
+
+\[
+G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \ldots
+\]
+
+where $R_{t+i}$ is the reward after $i$ steps, and $\gamma$ is the discount factor. 
+
+The estimate $V(s)$ for the value of a state $s$ is obtained by averaging the returns following all visits to $s$. We maintain a sum $S(s)$ and a count $N(s)$ for each state $s$:
+
+\[
+S(s) = \sum_{t \in \text{visits}(s)} G_t, \quad N(s) = \text{number of visits to } s
+\]
+
+Finally, the value of state $s$ is estimated as:
+
+\[
+v_{\pi}(s) \approx V(s) = \frac{S(s)}{N(s)}
+\]
+
+One major advantage of Monte Carlo methods is that they do not require a model of the environment; they learn directly from raw episodes of experience. These methods are both conceptually simple and easy to implement.
+
+
+\begin{algorithm}
+\caption{Monte Carlo ES (Exploring Starts) for estimating $\pi \approx \pi^*$}\label{MCES}
+\begin{algorithmic}[1]
+\Procedure{MonteCarloES}{$\mathcal{S}, \mathcal{A}, \gamma$}
+\State Initialize $\pi(s) \in \mathcal{A}(s)$ arbitrarily for all $s \in \mathcal{S}$
+\State Initialize $Q(s, a)$ arbitrarily for all $s \in \mathcal{S}$ and $a \in \mathcal{A}(s)$
+\State Initialize Returns($s, a$) as an empty list, for all $s \in \mathcal{S}$ and $a \in \mathcal{A}(s)$
+
+\While{True} \Comment{Loop forever (for each episode)}
+    \State Choose $S_0 \in \mathcal{S}$, $A_0 \in \mathcal{A}(S_0)$ randomly such that all pairs have probability $> 0$
+    \State Generate an episode from $S_0, A_0$, following $\pi: S_0, A_0, R_1, \ldots, S_{T-1}, A_{T-1}, R_T$
+    \State $G \gets 0$
+    \For{each step of episode, $t = T-1,T-2,...,0$}
+        \State $G \gets \gamma G + R_{t+1}$
+        \If{the pair $S_t, A_t$ is unique in $S_0, A_0, S_1, A_1, \ldots, S_{t-1}, A_{t-1}$}
+            \State Append $G$ to Returns($S_t, A_t$)
+            \State $Q(S_t, A_t) \gets$ average(Returns($S_t, A_t$))
+            \State $\pi(S_t)\gets \max_a Q(S_t, a)$
+        \EndIf
+    \EndFor
+\EndWhile
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+
+
 
 \subsection{Temporal difference learning}
 
@@ -49,43 +150,5 @@ The TD target is a (biased) estimate of $G_t$ \cite{RL}. The TD control algorith
 
 
 
-\subsection{Q-learning}
-One of the most well-known and widely used model-free RL methods is Q-learning, which was proposed by proposed by Watkins (1989) \cite{watkins1989}, and has been instrumental in solving various decision-making problems. One of the most renowned applications of Q-learning is in the use of a more advanced version called Double Q-learning, a modification of the Deep Q-Network (DQN). This method was employed to train agents to play 49 games on the Atari 2600 system \cite{van2016double}.
-Q-learning is a specific implementation of TD learning that seeks to learn the value of taking a particular action in a particular state, also known as the Q-value \cite{RL}. These Q-values are stored in a table and updated using a similar temporal difference method. The Q-learning algorithm is model-free, meaning it doesn't require knowledge of the underlying environment model. Instead, it learns from direct interaction with the environment.
-The goal of the Q-learning algorithm is to seek Q-function (our case table of state-action pairs) which represents the expected cumulative reward for taking a particular action in a given state and following the optimal policy thereafter. The agent starts with an initial Q-table and iteratively updates its Q-values based on the observed reward and the next state values.
-The update rule for Q-learning is given by \cite{watkins1992}:
-\begin{equation}
-    Q(S_t,A_t) \leftarrow
-    Q(S_t,A_t) + \alpha
-    \left [
-    R_{t+1} + \gamma \underset{a}{\text{max}}
-    Q(S_{t+1},a) - Q(S_t, A_t)
-    \right]
-\end{equation}
-Its important to note that the optimal policy ($\pi^*$) or optimal value function ($V^*$) can be directly obtain from $Q*$ by the following computations: $\pi^*(s) = \underset{a \in \SA}{\text{argmax }} Q^*(s,a)$ and $V^*(s) = \underset{a \in \SA}{\text{max }} Q^*(s,a)$.
 
-\begin{algorithm}
-\caption{Q-learning Algorithm}\label{Q-learning}
-\begin{algorithmic}
-\Require a step size  $\alpha \in [0,1]$, and $\epsilon \in [0,1]$ ($\epsilon$ is generally chosen to be a very small value)
-\Ensure $Q(s,a)$ for all $s \in \cS, a \in \SA(s)$ is initialized
-\For {each episode}
-\State Initialize $S$
-\For {each step of episode:} 
-    \State Choose action $a \in \SA(s)$, given state $s \in \cS$, using policy $\pi$ derived from $Q(s,a)$ 
-    \State ($\epsilon-$ greedy)
-    \State Take action  $a$, and observe $r$ and $s'$
-    \State $Q(s,a) \leftarrow
-    Q(s,a) + \alpha
-    \left [
-    r + \gamma \underset{a'}{\text{max}}
-    Q(s',a') - Q(s, a)
-    \right]$
-    \State \textbf{Update State:} $s \leftarrow s'$
-    \EndFor \Comment{Until $s$ is terminal state} \\
-    \textbf{Return:} $Q$ table 
-\end{algorithmic}
-\end{algorithm}
-The pseudo code above adapted from Sutton \& Barto (2018) \cite{RL} and Mohri et al. (2018) \cite{mohri2018}.
-Note that we are taking advantage of the recursive structure of the Value Function as given by the Bellman Equation; we only have access to individual experiences of next state $S_{t+1}$ and reward $R_{t+1}$, and not the transition probabilities of next state and  reward, and we are approximating $G_t$ by $R_{t+1} + \gamma V(S_{t+1})$. 
-In recent years, due to the rise of deep neural networks, Q-learning has been successfully applied in a diverse set of domains, showcasing its versatility and adaptability. 
+\subsection{Eligibility Traces}

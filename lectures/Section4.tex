@@ -1,0 +1,82 @@
+\section{Deep Q-Networks (DQN)}
+
+\subsection{Why Neural Networks?}
+Linear value function approximators assume that the value function is essentially a weighted combination of a set of features, each of which is a function of the state. This approach to value function approximation can be effective given an appropriate set of features. However, it often necessitates the careful manual design of this feature set, which can be a complex and time-consuming process.
+
+An alternative is to leverage a more sophisticated class of function approximators that can process states directly without the need for an explicit feature specification. Local representations, such as those based on kernel approaches, have certain appealing properties. These include the ability to converge under certain conditions. However, these methods often struggle to scale effectively when dealing with large spaces and data sets.
+
+Deep Neural Network (DNN) approximators offer significant benefits in this context. First and foremost, DNNs are universal function approximators, capable of representing a wide variety of complex functions. Compared to shallow networks, they can potentially represent the same functions with exponentially fewer nodes or parameters, which is a significant advantage when dealing with high-dimensional data. Furthermore, the parameters of a DNN can be learned using stochastic gradient descent, an efficient and well-established optimization technique. This makes DNNs a powerful tool for function approximation in reinforcement learning, particularly when dealing with large and complex state spaces.
+
+
+
+\subsection{Q-Learning via Function  Approximation}
+In Deep Reinforcement Learning we can use deep neural networks to represent the Value function, Policy, or Model. 
+For now, we focus on how we can approximate the value function, in subsequent sections we will see how deep neural networks can also be employed directly for policy approximation. 
+As in the case of policy evaluation, the true state-action value function is unknown. Therefore, we substitute it with a surrogate, or an approximation, which we refer to as the \vocab{target value}, denoted as $Q(s,a)$. This target value function serves as our best estimate for the true state-action value function.
+This is similar to the gradient calculation in linear value function approximation, but here the gradient is computed with respect to a more complex function, a deep neural network, rather than a simple linear function:
+    $$
+    \Delta w = \alpha \left(r + \gamma \max_{a'} \hat{Q}(s', a'; w) - \hat{Q}(s, a; w)\right) \nabla_w \hat{Q}(s, a; w)
+    $$
+
+Taking a step back, it's important to recall that in tabular Q-learning each state-action pair is assigned a $Q$-value, and these values are updated iteratively until the values convergence to obtain the optimal Q-function, $Q^*(s, a)$. However,  now we are adopting a different approach, instead of maintaining a table of Q-values, we will use a function approximator (like a neural network) parameterized by weights, to represent the Q-function. 
+The objective in this case is to adjust the weights of the function approximator to minimize the mean squared error (MSE) between the predicted Q-values and the target Q-values  via stochastic gradient descent. 
+The target Q-values are based on the Bellman equation, using the current estimates of the Q-values, rather than the true Q-values (which are unknown). This allows us to derive a gradient for updating the weights of the function approximator. 
+
+However, this strategy can lead to divergence in Q-learning with Value Function approximation (VFA), posing a significant challenge to the learning process. Two primary issues contribute to this problem: the correlations between samples, and the non-stationarity of the targets. These factors can disrupt the learning dynamics and lead to instability. Deep Q-Learning (DQN) was developed to address these issues. The technique introduces two key modifications to the traditional Q-learning procedure:
+\begin{enumerate}
+\item \textbf{Experience Replay:} DQN stores the agent's experiences at each time-step in a data set known as a replay buffer. During the learning updates, DQN randomly samples mini-batches from the replay buffer. This strategy breaks the correlation between consecutive samples, making the data more independent identically distributed (i.i.d.) data, which is more amenable to learning.
+\item \textbf{Fixed Q-targets:} In DQN, the network weights used to compute the target Q-values are held fixed for a number of updates, and only then updated to the current weights of the Q-network. This strategy reduces the non-stationarity of the targets, leading to more stable learning.
+\end{enumerate}
+
+
+
+
+
+
+
+\subsection{Experience Replay}
+Algorithms that operate off-policy, like DQN, have the advantage of re-using experiences, rather than discarding after one update. 
+Off-policy methods, such as Deep Q-Networks (DQN), learn from the experiences of a different policy (the behavior policy), while improving another (the target policy). The advantage here is that experiences (state, action, reward, next state tuples) can be stored in a replay buffer and can be sampled multiple times.
+Since each experience can be reused multiple times, this makes the learning process much more data efficient.
+This notion was first descirbed in 1992 by Long-Ji Lin's paper, where he introduced the term ``experience replay". Lin's critical insight was that Temporal Difference (TD) learning, could be inherently slow due to its dependence on a trial and error approach for data acquisition.
+Deep Q-Networks (DQNs) introduced by Mnih et al., 2013, have successfully employed Experience Replay to enhance the sample efficiency and stability of learning in Reinforcement Learning environments. The Experience Replay mechanism forms the foundation for facilitating temporally uncorrelated learning processes by maintaining a replay buffer, also called the experience pool, which stores the agent's interactions with the environment.
+\begin{itemize}
+    \item \textbf{Experience Collection:} As the agent operates within the environment, each interaction generates a tuple of state, action, reward, and next state - denoted as $(s, a, r, s')$. This tuple, also known as an experience or transition, is stored are stored in a data structure called the replay buffer or replay memory denoted as $\SD$. This buffer has a fixed size, so older experiences are discarded when the buffer is full.
+    
+    \item \textbf{Random Sampling:}  Instead of only learning from the most recent experience as in traditional Q-learning, DQNs also learn from a random sample of previous experiences drawn from the replay buffer. This is known as experience replay.
+    $$
+    (s,a,r,s') \sim \SD
+    $$
+    \item \textbf{Computing Q-value Targets and Loss:} The agent learns by computing a loss between the Q-value predictions from the DQN and the target Q-values computed from sampled experiences. The target Q-value for an action is the reward for taking that action plus the maximum Q-value for the next state, discounted by a factor gamma ($\gamma$):
+    $$
+    r + \gamma \max_{a'}  Q(s',a';\boldsymbol{w})
+    $$
+    \item \textbf{Network Update:}: The parameters of the DQN are then updated using a form of gradient descent to update the network weights.
+    $$
+    \Delta w = \alpha \left( r + \gamma \max_{a'} \hat{Q}(s', a'; \boldsymbol{w}) - \hat{Q}(s, a; \boldsymbol{w}) \right) \nabla_w \hat{Q}(s, a;\boldsymbol{w})
+    $$
+\end{itemize}
+
+\subsection{DQNs: Fixed Q-Targets}
+The second key improvements introduced by Mnih et. al. in Human-level Control through Deep Reinforcement Learning to help to stabilize training was the use of \vocab{Target Networks}. 
+It was motivated by the fact that in original DQN algorithm, $Q(s,a)$ is constantly changing because it depends on  $\hat{Q}(s, a;\mathbf{w})$.
+During training the Q-network parameters $\mathbf{w}$ are adjusted to minimize the difference between $Q(s,a)$ and $\hat{Q}(s, a;\mathbf{w})$, but this is difficult when $Q(s,a)$ changes at each training step.
+
+To help improve stability, we use a second neural network, with different weights, $\mathbf{w^-}$ called the target network. 
+
+This is simply a lagged copy of the Q-network $\hat{Q}(s, a;\mathbf{w})$\footnote{The original DQN update does not include the use of a target network. The use of a target network is an extension to the original DQN, which was introduced to further stabilize the training process.}. 
+This network is a copy of the original network, which gets updated less frequently (i.e., the weights are ``frozen" for a number of steps before being updated to match the current weights of the original network). This use of a target network helps to stabilize the training process by making the targets more consistent across updates.
+As the name suggests, the target network $\hat{Q}(s, a;\mathbf{w^-})$ is used to compute the estimated $Q(s,a)$ from the Bellman Equation:
+\begin{align*}
+    Q(s,a) &= r + \max_{a'} + \hat{Q}(s, a;\mathbf{w}) \quad  \text{Original DQN update}\\ 
+    Q(s,a) &= r + \max_{a'} + \hat{Q}(s, a;\term{$\mathbf{w^-}$})
+    \quad \text{Modified Bellman update}\\ 
+\end{align*}
+Periodically $\mathbf{w^-}$ is updated to the current values for $\mathbf{w}$. This is known as a \textbf{replacement update}. The update frequency for $\mathbf{w^-}$  is problem dependent. For example, in the Atari games it is common to update $\mathbf{w^-}$  every 1,000–10,000 environment steps. For simpler problems it is not necessary to wait as long. Updating $\mathbf{w^-}$ every 100–1,000 time steps  will be sufficient.
+\subsection{Double DQN}
+
+
+\subsection{DQN algorithm}
+
+
+

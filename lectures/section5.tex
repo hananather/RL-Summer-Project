@@ -1,0 +1,233 @@
+\section{Policy Gradient Methods}
+Thus far, all of the methods we looked at have been centered on value functions. These methods relied on learning the values associated with different actions, by estimating the $Q^{\pi}(s,a)$ or $V^{\pi}(s)$ functions, followed by the selection of actions based on their estimated values. The policies function were implicitly/indirectly derived from the estimates of state-action value function. 
+\vocab{Policy Gradient Methods} are a class of reinforcement learning algorithms that learn a parameterized policy that can select actions without a value function. 
+
+We denote the policy's parameter vector as $\theta$, which is an element of the $d$-dimensional real number space $\RR^d$. In this notation, $\pi_{\theta}(a \mid s)$ represents the probability that the policy parameterized by $\theta$ will select action $a$ when the environment is in state $s$ at time $t$. More formally, $\pi_{\theta}(a \mid s) = \PP_{\theta} \{A_t = a \mid S_t = s \}$, where $S_t$ and $A_t$ represent the state of the environment and the action taken by the agent at time $t$, respectively. This function $\pi_{\theta}(a \mid s)$ forms the basis of our policy and dictates how the agent should act in different states for optimal learning and performance.
+
+As we saw in chapter 1, \ref{RL-Objective}, objective function of RL is:
+\begin{align*}\label{RL-Objective}
+    \theta^{\star} = \arg \max_{\theta} \underbrace{\EE_{\tau \sim p_{\theta}(\tau)} \left[ 
+    \sum_{t} r(\boldsymbol{s}_t, \boldsymbol{a}_t)
+    \right]}_{J(\theta)}
+\end{align*}
+Before we talk about how we can optimize the RL objective, lets consider how we can evaluate it. So if we have a policy $\pi_{\theta}$, can we figure out approximately what is the value of the RL objective. We use $J(\theta)$ as notation short hand for the expectation 
+$\EE_{\tau \sim p_{\theta}(\tau)} \left[  \sum_{t} r(\boldsymbol{s}_t, \boldsymbol{a}_t) \right]$. 
+Since we can run our policy, this amount to sampling from the inital state distribution and the transition probabilities, we can evaluate $J(\theta)$ approximately by simply making roll outs from our policy. 
+\begin{align}
+    J(\theta) = \EE_{\tau \sim p_{\theta}(\tau)} \left[ 
+    \sum_{t} r(\boldsymbol{s}_t, \boldsymbol{a}_t)
+    \right] \approx \frac{1}{N} \sum_{i = 1}^{N} \sum_{t=0}^{+ \infty} r(s_{i,t}, a_{i,t})
+\end{align}
+We run our policy in the "real-world" $N$ times to collect $N$ sampled trajectories, $s_{i,t}$ and $a_{i,t}$ refers to time step $t^{th}$ in the $i^{th}$ sample. Having generated these samples from $\pi_{\theta}(a \mid s)$, we can get an unbiases estimate for the expected value of the total reward simply by summing up the rewards along each sample trajectory and then averaging the rewards over the samples. The more samples we generate, the larger $N$ is and more accurate our estimate is of this expected value. 
+
+
+
+
+Before delving into the optimization of the Reinforcement Learning (RL) objective, let's first understand how we can evaluate it. Given a policy $\pi_{\theta}$, we aim to estimate the value of the RL objective, denoted as $J(\theta)$. This objective is the expected cumulative reward for trajectories $\tau$ sampled according to the policy $\pi_{\theta}$, formally expressed as $\EE_{\tau \sim p_{\theta}(\tau)} \left[ \sum_{t} r(\boldsymbol{s}_t, \boldsymbol{a}_t) \right]$, where $r(\boldsymbol{s}_t, \boldsymbol{a}_t)$ represents the reward at time $t$ for state-action pair $(\boldsymbol{s}_t, \boldsymbol{a}_t)$.
+
+As we can run our policy, which essentially means sampling from the initial state distribution and the transition probabilities, we can approximate $J(\theta)$ by generating "rollouts" or trajectories from our policy. Thus, the RL objective can be empirically approximated as:
+
+\begin{align}
+    J(\theta) = \EE_{\tau \sim p_{\theta}(\tau)} \left[ \sum_{t} r(\boldsymbol{s}_t, \boldsymbol{a}_t) \right] \approx \frac{1}{N} \sum_{i = 1}^{N} \sum_{t=0}^{+ \infty} r(s_{i,t}, a_{i,t})
+\end{align}
+
+Here, we run our policy in the "real-world" $N$ times to generate $N$ sampled trajectories. The notation $s_{i,t}$ and $a_{i,t}$ represents the state and action respectively at time step $t$ in the $i^{th}$ sampled trajectory. Having generated these samples using $\pi_{\theta}(a \mid s)$, we can obtain an unbiased estimate for the expected total reward by summing the rewards along each sampled trajectory and subsequently averaging these sums over all samples. The accuracy of our approximation improves as $N$ increases, implying that the more samples we generate, the closer our estimate is to the actual expected value.
+
+
+The policy parameter $\theta$ is learned through the gradient of a scalar performance measure $J(\theta)$, which is conceptually akin to the loss function used in conventional machine learning. Policy gradient methods strive for performance maximization by making updates that approximate gradient ascent in the performance measure $J$. This is represented as:
+
+\begin{equation}
+\theta_{t+1} = \theta_t + \alpha \widehat{\nabla J(\theta_t)}
+\end{equation}
+
+In this equation, $\theta_{t+1}$ denotes the updated policy parameter, $\theta_t$ is the current policy parameter, and $\alpha$ is the learning rate controlling the extent of updates made in each step. The symbol $\widehat{\nabla J(\theta_t)}$ represents a stochastic estimate of the gradient of the performance measure $J$ with respect to its argument $\theta_t$ at time $t$. The "hat" on $\nabla J(\theta_t)$ indicates that it is an estimate rather than the exact gradient. This estimate is obtained through sampling, and its expectation is an approximation of the actual gradient of the performance measure $J$. Hence, the process essentially adjusts $\theta$ in the direction that maximally improves $J$ on average.
+
+\
+
+
+
+
+
+These methods leverage the \textbf{Policy Gradient Theorem}, which provides a formula for calculating the gradient of the expected cumulative reward with respect to the policy parameters. By iteratively adjusting the parameters in the direction of the calculated gradient, the policy improves and ultimately converges towards an optimal policy.
+
+Policy gradient algorithms attempt to solve the optimization problem 
+
+\begin{equation}
+\max_{\boldsymbol{\theta}} J(\pi_{\boldsymbol{\theta}}) = \mathbb{E}_{\tau \sim \pi_{\boldsymbol{\theta}}} \left[\sum_{t=0}^{\infty} \gamma^{t} r_t\right]
+\end{equation}
+
+by performing stochastic gradient ascent on the policy parameters $\boldsymbol{\theta}$, using the policy gradient 
+
+\begin{equation}
+g = \nabla_{\boldsymbol{\theta}} J(\pi_{\boldsymbol{\theta}}) = \mathbb{E}_{\tau \sim \pi_{\boldsymbol{\theta}}} \left[\sum_{t=0}^{\infty} \gamma^{t} \nabla_{\boldsymbol{\theta}} \log \pi_{\boldsymbol{\theta}}(a_t|s_t) A_{\pi_{\boldsymbol{\theta}}}(s_t, a_t)\right]
+\end{equation}
+
+
+\note{
+Policy gradient methods just boil down to learning the policy parameters based on the gradient of some scalar performance measure $J(\boldsymbol{\theta})$ with respect to the policy parameters.  
+Policy gradient methods seek to maximize performance (i.e. maximize cumulative reward) so the updates approximate gradient \textit{ascent} in $J$:
+$$
+\boldsymbol{\theta}_{t+1} = \boldsymbol{\theta}_{t} + \alpha \nabla_\theta J(\boldsymbol{\theta}_t)
+$$
+We will see that all policy gradient methods essentially follow this recipe. 
+}
+
+\subsection{Deriving Policy Gradients}
+In many machine learning problems, particularly in reinforcement learning, we often need to optimize the expectation of a function $f(x)$ under a probability distribution $p(x; \boldsymbol{\theta})$, parameterized by $\boldsymbol{\theta}$. The function $f(x)$ could, for example, represent the reward or cost associated with the action or state $x$. To optimize this expectation, we often leverage the properties of the \vocab{score function}, which is defined as the gradient of the log of $p(x; \boldsymbol{\theta})$:
+$$
+\nabla_{\theta} \log p(x; \boldsymbol{\theta})
+$$
+
+The expectation of this score function under the distribution $p(x; \boldsymbol{\theta})$ is denoted as: 
+
+\begin{equation}
+\mathbb{E}_{x \sim p(x|\theta)}[f(\boldsymbol{x})] = \int_x p(x; \boldsymbol{\theta}) f(x) dx 
+\end{equation}
+
+for continuous variables, or 
+
+\begin{equation}
+\mathbb{E}_{x \sim p(x|\theta)}[f(\boldsymbol{x})] = \sum_x p(x; \boldsymbol{\theta}) f(x) 
+\end{equation}
+
+for discrete variables.
+
+When our goal is to maximize this expectation with respect to the parameters $\boldsymbol{\theta}$, we need to compute the gradient of this expectation. The Policy Gradient methods perform exactly this operation.
+
+To compute the gradient of this expectation, we can't directly swap the gradient and the expectation (or integral or sum), because the expectation is over $x$ and the gradient is w.r.t $\boldsymbol{\theta}$, and $x$ and $\boldsymbol{\theta}$ are not independent (because $x$ is drawn from a distribution parameterized by $\boldsymbol{\theta}$). Here, a technique known as the \text{log-derivative trick} or \textit{score function trick} comes to our rescue.
+
+This trick allows us to rewrite the gradient of the expectation in a way that enables us to estimate it by sampling from the distribution $p(x; \boldsymbol{\theta})$. This trick relies on the following identity:
+
+\begin{equation}
+\nabla_\theta \mathbb{E}_{x \sim p(x|\theta)}[f(\boldsymbol{x})] = \mathbb{E}_{x \sim p(x|\theta)}[f(\boldsymbol{x})\nabla_\theta \log p(x; \boldsymbol{\theta})]
+\end{equation}
+\begin{proof}
+    \begin{align*}
+    \nabla_{\boldsymbol{\theta}} \mathbb{E}_{x}[f(\boldsymbol{x})] & = \nabla_{\boldsymbol{\theta}} \sum_{x} p(x) f(x) \quad & \text{(definition of expectation)} \\
+    & = \sum_{x} \nabla_{\boldsymbol{\theta}} p(x) f(x) \quad & \text{(swap sum and gradient)} \\
+    & = \sum_{x} p(x) \frac{\nabla_{\boldsymbol{\theta}} p(x)}{p(x)} f(x) \quad & \text{(both multiply and divide by } p(x)) \\
+    & = \sum_{x} p(x) \nabla_{\boldsymbol{\theta}} \log p(x) f(x) \quad & \text{(use the fact that } \nabla_{\boldsymbol{\theta}} \log(z) = \frac{1}{z} \nabla_{\boldsymbol{\theta}} z) \\
+    & = \mathbb{E}_{x}[f(\boldsymbol{x}) \nabla_{\boldsymbol{\theta}} \log p(x;\boldsymbol{\theta})] \quad & \text{(definition of expectation)}
+    \end{align*}
+\end{proof}
+In the context of policy gradients, $p(x; \boldsymbol{\theta})$ is the policy $\pi(a|s; \boldsymbol{\theta})$, $f(x)$ is the return (or some estimate of it) following action $x$ (often denoted as $a$ for action in policy gradient methods), and we seek to maximize the expected return by adjusting the policy parameters $\boldsymbol{\theta}$. The resulting policy gradient estimate is:
+
+\begin{equation}
+\nabla_{\theta} J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta} \left[\sum_{t=0}^{T} \nabla_{\theta} \log \pi_{\theta}(a_t|s_t) Q^{\pi_{\theta}}(s_t, a_t)\right]
+\end{equation}
+
+where $J(\theta)$ denotes the expected reward under policy $\pi$ parameterized by $\theta$, $\tau$ is a trajectory generated by the policy $\pi_\theta$, $T$ is the trajectory's length, $\log \pi_{\theta}(a_t|s_t)$ represents the log-probability of taking action $a_t$ under state $s_t$, and $Q^{\pi_{\theta}}(s_t, a_t)$ is the action-value function of action $a_t$ at state $s_t$ under policy $\pi_{\theta}$.
+
+
+\subsection{Policy Gradient Theorem}
+\begin{theorem}[Policy Gradient Theorem]
+For any differentiable policy $\pi_{\boldsymbol{\theta}}(a|s)$, the gradient of the expected return $J(\boldsymbol{\theta})$ with respect to the policy parameters $\boldsymbol{\theta}$ is given by:
+
+\[
+\nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) = \mathbb{E}_{\pi_{\boldsymbol{\theta}}}\left[ \nabla_{\boldsymbol{\theta}} \log \pi_{\boldsymbol{\theta}}(A_t|S_t) \cdot Q^{\pi_{\theta}}(s,a) \right]
+\]
+where $G_t$ is the return from timestep $t$ and the expectation is over the trajectory distribution induced by following policy $\pi_{\boldsymbol{\theta}}$ \footnote{This theorem basically states that the gradient of the performance measure is the expected value of the gradient of the log-probability of the trajectory under the policy multiplied by the return $G_t$.}. 
+\end{theorem}
+\begin{proof}
+    Chapter $13.2$ in Sutton \& Barto has a nice derivation of the policy gradient theorem for episodic tasks and discrete states.
+\end{proof}
+
+This is a foundational theorem for policy gradient methods as it allows us to estimate the gradient of the performance measure with respect to the policy parameters by sampling trajectories under the policy. The estimate is then used to update the policy parameters using gradient ascent, with the aim of improving the policy performance.
+
+\subsection{REINFORCE Algorithm}
+The policy gradient theorem can be used to derive a basic policy-gradient algorithm: the REINFORCE algorithm (Willams, 1992). The REINFORCE algorithm, also known as the Monte Carlo Policy Gradient method, is a simple method for learning policies directly from the policy gradient. 
+The algorithm starts by initialize policy parameters $\boldsymbol{\theta}$ arbitrarily. For each episode:
+    \begin{itemize}
+        \item Generate an episode by following policy $\pi_{\boldsymbol{\theta}}$: $S_0, A_0, R_1, \ldots, S_T$, where $T$ is the final time step.
+        \item For each time step of the episode $t = 0, 1, \ldots, T-1$:
+            \begin{itemize}
+                \item Compute the return $G_t = R_{t+1} + \gamma R_{t+2} + \ldots + \gamma^{T-t-1} R_T$.
+                \item Update policy parameters using the policy gradient:
+                \[
+                    \boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha \gamma^{t} G_t \nabla_{\boldsymbol{\theta}} \log \pi_{\boldsymbol{\theta}}(A_t|S_t).
+                \]
+            \end{itemize}
+    \end{itemize}
+This algorithm makes use of the policy gradient theorem as it uses full-episode rollouts to compute the returns $G_t$ and then it updates the policy parameters in the direction that maximizes the expected return in the long run.
+
+The policy is updated in the direction of more reward by increasing the log-probability of the taken action proportional to the received return $G_t$. If the return is positive, the log-probability of the taken action is increased, which in turn increases the probability of this action being selected in the same state in the future. On the other hand, if the return is negative, the update decreases the log-probability of the taken action, thus discouraging the selection of this action in the same state.
+
+While simple and effective, the REINFORCE algorithm suffers from high variance in the gradient estimates, which can make the learning unstable. Various techniques, such as using a baseline or using more advanced policy gradient methods, can be employed to reduce the variance and improve the performance.
+
+
+\begin{algorithm}
+\caption{REINFORCE algorithm}
+\begin{algorithmic}[1]
+\Procedure{REINFORCE}{}
+\For{each episode}
+    \State Generate an episode following $\pi(\theta)$: $S_0, A_0, R_1, ..., S_{T-1}, A_{T-1}, R_T$
+    \For{each step of the episode $t = 0, 1, ..., T-1$}
+        \State $G \leftarrow \sum_{k=t+1}^T \gamma^{k-t-1} R_k$
+        \State $ \boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha \gamma^t G \nabla_\theta \ln \pi(A_t | S_t, \boldsymbol{\theta})$
+    \EndFor
+\EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+We are interested in finding how we could shift the distribution through its parameter $\boldsymbol{\theta}$ to increase the scores of its samples, as judged by $f$. In the case if policy gradients the $f(\boldsymbol{x})$ is our reward function or \vocab{advantage function}, and $p(x;\boldsymbol{\theta})$ is the policy distribution or policy network.
+
+\subsection{Advantage Actor-Critic}
+\vocab{Actor-critic} methods are a type of reinforcement learning approach where two primary components are involved: the actor and the critic. Both of these components are typically implemented as neural networks.
+\begin{itemize}
+    \item \textbf{Actor:} This is the policy part of the algorithm. The policy of the actor, typically denoted as $\pi$, is a function that takes in a state and outputs a probability distribution over actions. This policy is parameterized by vector $\theta$, hence we write it as $\pi_{\theta}$.
+    \item \textbf{Critic:} The critic, on the other hand, is the value function part of the algorithm. The critic's role is to estimate the value (or expected future returns) of taking certain actions in certain states. In other words, it critiques the actions made by the actor by evaluating how good the action was based on the observed reward.
+\end{itemize}
+The policy gradient theorem tells us that we can improve this policy by ascending the gradient of the expected cumulative reward. In REINFORCE, this gradient is estimated using Monte Carlo samples of the return, and the policy update rule is as follows:
+    \[\theta \leftarrow \theta + \alpha \nabla_{\theta} \log \pi_{\theta}(a|s) R(\tau)\]
+In Advantage Actor-Critic methods, we instead use the advantage function $A(s, a)$ as a reinforcing signal. The advantage function measures how much better an action $a$ is compared to the average action in state $s$. Therefore, the update rule in Advantage Actor-Critic methods is:
+\[\theta \leftarrow \theta + \alpha \nabla_{\theta} \log \pi_{\theta}(a|s) A(s, a)\]
+The Advantage function $A(s,a)$ is defined as the difference between the Q-value of taking action $a$ in state $s$ and the V-value of state $s$:
+$$A(s, a) = Q(s, a) - V(s)$$
+
+\note{
+\begin{align*}
+\text{REINFORCE:} \quad \theta & \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a|s) R(\tau) \\
+\text{Advantage Actor-Critic:} \quad \theta & \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a|s) A(s, a)
+\end{align*}
+}
+The central idea behind actor-critic methods is that these two components, the actor and the critic, work together to find the optimal policy. The critic informs the actor how to update its policy, by evaluating the chosen actions, and the actor uses this feedback to make better-informed actions in the future.
+
+\subsection{Proximal Policy Optimization}
+
+Policy gradient algorithms are known to be susceptible to performance collapse, where an agent's performance can suddenly degrade. This situation is challenging to recover from, as the agent begins to generate suboptimal trajectories which further degrade the policy. On-policy algorithms, in particular, are sample-inefficient as they do not allow for reusing data.
+
+Proximal Policy Optimization (PPO) is a class of optimization algorithms proposed by Schulman et al. that attempts to mitigate these issues. PPO introduces a surrogate objective function, which helps avoid performance collapse by ensuring monotonic policy improvement and allows for the reuse of off-policy data.
+
+The main idea behind PPO is to restrict the policy update at each step to a region around the current policy, ensuring that the new policy does not deviate significantly from the old one. This restriction is enforced by introducing a clipped probability ratio in the objective function, which is then optimized to update the policy. The new PPO objective can be written as:
+
+\[
+\mathcal{L}^{PPO}(\theta) = \mathbb{E}_{t} \left[ \min \left( r_t(\theta) \hat{A}_t, \text{clip} \left( r_t(\theta), 1 - \epsilon, 1 + \epsilon \right) \hat{A}_t \right) \right]
+\]
+
+where $r_t(\theta) = \frac{\pi_{\theta}(a_t|s_t)}{\pi_{\theta_{\text{old}}}(a_t|s_t)}$ is the probability ratio, $\hat{A}_t$ is the advantage function estimate at time $t$, and $\epsilon$ is a hyperparameter that controls the size of the trust region.
+
+By replacing the original objective $J(\pi_{\theta})$ with the PPO objective, both REINFORCE and Actor-Critic algorithms can benefit from more stable and sample-efficient training.
+
+\subsection{A variant of PPO - KL penalty }
+In Supervised Learning, the cost function is typically straightforward to implement. Once defined, we can apply gradient descent and with minimal hyperparameter tuning, we can have high confidence in achieving solid results. The pathway to success in RL, however, is not as clear-cut. Reinforcement Learning algorithms contain several interacting components, making them challenging to debug, and requiring a significant effort in tuning to yield good results. Proximal Policy Optimization (PPO) attempts to address these challenges by finding a balance between implementation simplicity, sample complexity, and tuning ease. The PPO method seeks to compute an update at each step that minimizes the cost function, while simultaneously ensuring that the deviation from the previous policy remains relatively small.
+
+A variant of PPO that uses an adaptive KL penalty to control the change of the policy at each iteration, known as the The PPO-Clip objective function is:
+\begin{align*}
+L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min \left( r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t \right) \right]
+\end{align*}
+
+Where:
+\begin{itemize}
+    \item $\theta$ is the policy parameter.
+    \item $\hat{\mathbb{E}}_t$ denotes the empirical expectation over timesteps.
+    \item $r_t(\theta)$ is the ratio of the probabilities under the new and old policies, respectively.
+    \item $\hat{A}_t$ is the estimated advantage at time $t$.
+    \item $\epsilon$ is a hyperparameter, usually $0.1$ or $0.2$.
+\end{itemize}
+The clip operation ensures the ratio $r_t(\theta)$ is within the interval $[1-\epsilon, 1+\epsilon]$.
+
+This objective function is designed to control how much the policy can change in a single update to ensure stable learning. The objective function includes two terms, and optimization attempts to maximize the minimum of these two terms. The first term $r_t(\theta) \hat{A}_t$ is just the standard policy gradient objective. The second term $\text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t$ is a clipped version of the first term, which discourages policy changes if the new and old policy ratios ($r_t(\theta)$) are too different (i.e., outside the $[1-\epsilon, 1+\epsilon]$ range).
+\begin{verbatim}
+    https://openai.com/research/openai-baselines-ppo
+\end{verbatim}

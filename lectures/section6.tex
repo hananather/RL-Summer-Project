@@ -1,1 +1,77 @@
-\subsection{Actor-Critic algorithms}
+\section{Advantage Actor-Critic}
+In the domain of Reinforcement Learning (RL), one-step return in Temporal Difference (TD) learning has demonstrated a favorable trade-off. Although it introduces a bias, its variance is often significantly reduced compared to the actual return. The \vocab{Actor-Critic} paradigm combines the two concepts in RL: policy gradients and value functions. This methodology is characterized by its dual components that are trained in tandem:
+\begin{itemize}
+    \item The \textit{actor}: Responsible for learning a parameterized policy that dictates the agent's behavior.
+    \item The \textit{critic}: Tasked with estimating the value of state-action pairs, offering a gauge for the decisions made by the actor.
+\end{itemize}
+One of the driving forces behind the actor-critic design is the insight that a well-trained critic can provide a more informative feedback signal to the actor than the raw, sometimes sparse, rewards that can be obtained directly from the environment\footnote{This suggests that the internal evaluation of decisions, via the critic, might expedite and refine the learning process of the agent's behavior, compared to merely relying on external feedback.}.
+
+The policy gradient theorem tells us that we can improve this policy by ascending the gradient of the expected cumulative reward. In REINFORCE, this gradient is estimated using Monte Carlo samples of the return, and the policy update rule is as follows:
+    \[\theta \leftarrow \theta + \alpha \nabla_{\theta} \log \pi_{\theta}(a|s) R(\tau)\]
+In Advantage Actor-Critic methods, we instead use the advantage function $A(s, a)$ as a reinforcing signal. The advantage function measures how much better an action $a$ is compared to the average action in state $s$. Therefore, the update rule in Advantage Actor-Critic methods is:
+\[\theta \leftarrow \theta + \alpha \nabla_{\theta} \log \pi_{\theta}(a|s) A(s, a)\]
+The Advantage function $A(s,a)$ is defined as the difference between the Q-value of taking action $a$ in state $s$ and the V-value of state $s$:
+$$A(s, a) = Q(s, a) - V(s)$$
+
+\note{
+\begin{align*}
+\text{REINFORCE:} \quad \theta & \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a|s) R(\tau) \\
+\text{Advantage Actor-Critic:} \quad \theta & \leftarrow \theta + \alpha \nabla_\theta \log \pi_\theta(a|s) A(s, a)
+\end{align*}
+}
+The central idea behind actor-critic methods is that these two components, the actor and the critic, work together to find the optimal policy. The critic informs the actor how to update its policy, by evaluating the chosen actions, and the actor uses this feedback to make better-informed actions in the future.
+
+\subsection{The Advantage Function}
+Its worth understanding that the advantage function has a number of useful properties that are quintessential for grasping its significance in reinforcement learning.  
+
+\begin{enumerate}
+    \item \textbf{Expectation of Zero:} Consider the mathematical relation:
+    \[
+    \mathbb{E}_{a \in A} [A^{\pi}(s_t,a)] = 0.
+    \]
+    This conveys that when all possible actions possess equivalent reward, the value of \(A^{\pi}\) will be zero across all actions. In the process of training policies using \(A^{\pi}\), this ensures that the likelihood of choosing any action remains invariant. Compare this to reward signals rooted in absolute state or state-action values in equivalent scenarios might have an constant uniform value, it would actively encourage (if positive) or discourage (if negative) the action taken.
+
+    \item \textbf{Intuitive Feedback:} Envision a circumstance where the selected action is inferior compared to the average, yet still anticipates a positive return; that is, 
+    \[
+    Q^{\pi}(s_t,a_t) > 0 \text{ but } A^{\pi}(s_t, a_t) < 0.
+    \]
+    The logical inference here is that the likelihood of such an action should decrease due to the presence of superior alternatives. In this context, feedback from \(A^{\pi}(s_t, a_t)\) closely aligns with our intuition, decreasing the probability of action. However, utilizing \(V^{\pi}\) or \(Q^{\pi}\) in conjunction with a baseline might paradoxically amplify its likelihood due to the positive return.
+
+    \item \textbf{Comparative Evaluation:} The advantage function is a relative measure. For a specific state \(s\) and its corresponding action \(a\), it juxtaposes the value of the state-action duo, \(Q^{\pi}(s,a)\), against the value of the state, \(V^{\pi}(s)\). This paradigm is instrumental in ensuring actions are neither unduly penalized for the policy's current unfavorable state nor excessively rewarded for an advantageous one. This perspective recognizes that an action predominantly sways future trajectories, without influencing the preceding sequence of events that resulted the policy into its current state.
+\end{enumerate}
+
+
+\subsection{Estimating Advantage}
+To calculate the advantage function $A^{\pi}$, we need an estimate for $Q^{\pi}$ and  $V^{\pi}$. One idea is that we could learn $Q^{\pi}$ and $V^{\pi}$ separately with different neural networks. However this has two disadvantages: (1) the two estimates may not be consistent (2) It is less efficient to learn. Therefore, typically we learn 
+$V^{\pi}$ and combined it with rewards from a trajectory to estimate $Q^{\pi}$.
+
+There are two reason why learning $V^{\pi}$ is preferable to $Q^{\pi}$. First, $Q^{\pi}$ is a more complex function and may require more samples to learn a good estimate. This can be particularly problematic in the setting where the actor and the citric are trained jointly. Second, it can be computationally expensive to estimate $V^{\pi}$ from $Q^{\pi}$. Estimating $V^{\pi}$ from $Q^{\pi}$ requires computing the values for all possible actions in state $s$, then taking the action-probabilities weighted average to obtain $V^{\pi}$.
+
+Lets look at how to estimate $Q^{\pi}$ from $V^{\pi}$. The $Q$ function, which represents the expected return of taking action $a$ in state $s$ and then following policy $\pi$, can be expressed as a mix of the immediate reward and the expected future rewards, which are given by the value function. We can decompose $Q$ function into the immediate reward received for taking action $a$ in state $s$ plus the discounted expected future rewards when following policy $\pi$ thereafter.
+$$
+Q^{\pi}(s_t,a_t)  = r(s,a) + \gamma \EE_{\tau \sim \pi}[V^{\pi}(s)]
+$$
+If we assume for a moment that we have a perfect estimate of the $V^{\pi}(s)$, then the $Q-$function can be rewritten as a mix of the expected rewards for $n$ time steps, followed by $V^{\pi}(s_{n+1})$:
+\begin{align*}
+    Q^{\pi}(s_t,a_t)  &=  \EE_{\tau \sim \pi} [r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \cdots + \gamma^n r_{t+n}]  \gamma^{n+1} [V^{\pi}(s_{t+n+1})] \\ 
+    & \approx r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \cdots + \gamma^n r_{t+n} + \hat{V}^{\pi}(s_{t+n+1})
+\end{align*}
+We use a single trajectory of rewards $(r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \cdots + \gamma^n r_{t+n})$ in place of the expectation, and substitute $\hat{V}^{\pi}$ which is learned by the critic. This equation make the trade-off between bias and variance. The $n-$steps of the actual rewards are unbiased but have very high variance because they come from only a single trajectory. $\hat{V}^{\pi}$ has lower variance since it reflects an expectation over al trajectories seen so far, but it is biased because its calculated using a function approximator. The intuition between mixing these two types of estimates is that the variance of the actual rewards typically increases the more steps away from $t$ you take. Close to $t$, the benefits of using an unbiased estimate may outweigh the variance introduced. As $n$ increases, the variance in the estimates will likely start to become problematic, and switching to a lower variance but biased estimate is better. The number of steps of actual rewards, $n$, controls the trade-off between bias and variance. 
+
+By combining the $n-$step estimate for $Q^{\pi}$ with $\hat{V}^{\pi}$ we get a formula for estimating the advantage function:
+
+\begin{align*}
+    A^{\pi}_{Nstep} &= Q^{\pi}(s_t, a_t) - V^{\pi}(s_t) \\
+    & \approx r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \cdots + \gamma^n r_{t+n} + \hat{V}^{\pi}(s_{t+n+1})
+     - \hat{V}^{\pi}(s_t)
+\end{align*}
+The number of steps of actual rewards, $n$, controls the amount of variance in the advantage estimator, and is a hyperparameter that needs to be tuned. Small $n$ results in an esimator with lower variance but higher bias, and large $n$ results in an estimator with higher variance but lower bias. 
+
+
+\subsection{Generalized Advantage Estimation}
+Generalized Advantage Estimation (GAE) was proposed by Schulman et al. as an improvement over the $n$-step return estimate for the advantage function. 
+It addresses the problem of having to explicitly choose the number of steps of return, $n$.
+The main idea behind GAE is that instead of picking one value of $n$, we calculate the advantage using a weighted average of individual advantages calculated with $n=1,2,3, \dots , k$. 
+The purpose of GAE is to significantly reduce the variance of the estimator while keeping the bias introdced as low as possible. 
+
+GAE is defined as an exponentially weighted average of all the $n-$step forward return advantages. 

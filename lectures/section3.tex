@@ -1,41 +1,5 @@
-\section{Control}
-\subsection{Generalized Policy Iteration (GPI)}
- Virtually every reinforcement learning (RL) control algorithm has its roots in the fundamental principle of Generalized Policy Iteration (GPI). 
- However, the exact implementation of GPI varies and differs from one algorithm to another. 
- Therefore, prior to delving into the specifics of RL Control algorithms, its crucial to thoroughly understand the overarching concept of GPI. 
+\section{Deep Reinforcement Learning}
 
-The term Generalized Policy Iteration (GPI) refers to the approach of interweaving Policy-Evaluation and Policy-Improvement procedures. 
-GPI assess the Value function for a given policy, $\pi$, using \textit{any} Policy Evaluation method, and subsequently improves the policy using \textit{any} Policy Improvement method.
-
-That is, the policy consistently improves itself in relation to the Value Function, while the Value Function moves towards the Value Function corresponding to the policy.
-If both the evaluation process and improvement process reach an equilibrium (i.e., no further changes transpire), then the resulting policy and Value Function must be optimal. 
-
-The value function reaches stability once it aligns with the current policy, i.e., when the policy evaluation step is complete. The policy, on the other hand, stabilizes when it becomes greedy with respect to the current value function, that is, during the policy improvement step. Both processes reach an equilibrium when a policy that is greedy with respect to its own evaluation function is found. This is the optimal policy, where any further changes neither improve the value function nor the policy itself.
-
-Within the Generalized Policy Iteration framework, both an \textit{approximate policy} and \textit{approximate value function} are maintained. The Value Function is continually modified to more closely approximate the true Value Function of the current policy, while the policy is perpetually improved in relation to the existing Value Function.  While these two modifications are somewhat counteractive -- each sets a dynamic target for the other --  their combined effect drives both the policy and Value Function towards optimally. 
-Policy evaluation is performed through experience from many episodes, with the approximate value function converging asymptotically to the true function.
-
-
-One of the most important features of the GPI framework is its ability to accommodate 'partial' policy improvement. The term 'partial' here encompasses a broad range of computations, any of which contribute either to a full policy evaluation or towards policy improvement. Consequently, GPI offers flexibility to transition between policy evaluation and policy improvement without the need for completely exhaustive policy evaluation or complete policy improvement. For instance, we do not have to wait for policy evaluation computations to fully converge before proceeding with policy improvement.
-
-
-The policy improvement theorem provides a guarantee that each successive policy $\pi_{k+1}$ is uniformly superior to, or at least as effective as, its predecessor $\pi_{k}$. In situations where $\pi_{k+1}$ is equivalent  to $\pi_{k}$, they are both classified as optimal policies. This implies that the overall process will ultimately converge to an optimal policy and corresponding optimal value function. 
-
-In the context of Monte Carlo policy iteration, it is intuitively appealing to alternate between evaluation and improvement on a per-episode basis. Following each episode, the observed returns serve as inputs for policy evaluation, after which the policy undergoes refinement at all the states encountered during the episode.
-
-\subsection{Why $Q-$function for Control?}
-
-The $Q$-function serves as the an evaluative metric for state-action pairs $(s,a)$, under a specific policy $\pi$. Recall that the value of $(s,a)$ is the expected cummulative discounted reward obtained from taking action $a$ in state $s$, followed by adherence to policy $\pi$ in the subsequent course of actions.
-In situations where an environmental model is not available, alongside determining the value of various states, an agent needs to also consider alternative moves and the expected consequences of making those moves. 
-\note{
-The $Q^{\pi}(s,a)$ function assigns a numerical value to each potential action, this value can be used to determine of the most optimal move to execute in a given state.}
-
-One of the key advantages of $Q^{\pi}(s,a)$ is its provision of a direct strategy for agent action. 
-Agents can compute $Q^{\pi}(s,a)$ for each feasible action $a \in A(s)$ within a given state $s$, and select the action the action with the highest value.
-When $Q^{\pi}(s,a)$ is optimal, it gives the maximum expected value from taking action $a$ in state $s$, representing the best potential performance if the agent were to operate optimally in all future states. Hence, a knowing $Q(s,a)$ is automatically yields an optimal policy.
-
-On the other hand, in order to utilize $V^{\pi}(s)$ for action selection, the agent needs to experiment with each of the available actions $a \in A(s)$ in a state $s$, observe the consequent state transition to $s'$, and keep track the resulting reward. Only then can an agent can act optimally by choosing the action leading to the highest expected cumulative discounted reward,  $\EE[r + V^{\pi}(s')]$. 
-However, in situations where state transitions are stochastic, that is, where taking action $a$ in state $s$ can result in varying next states $s'$, the agent might have to replicate this process repeatedly to acquire a reliable estimate of the expected value from a specific action. This one-step look-ahead requirement for $V^{\pi}$ often poses a challenge in RL Control problems. $Q^{\pi}(s,a)$ circumvents this issue by directly learning the value of $(s,a)$, thereby storing the one-step look-ahead for each action $a$ in every state $s$. Therefore, for Control algorithms, which select actions based on a learned value function generally approximate the approximate $Q^{\pi}(s,a)$.
 
 \subsection{Value Function Approximation}
 Function approximation in reinforcement learning is a method used to estimate state-value functions and the policy functions.
@@ -100,4 +64,3 @@ Just as in policy evaluation, the true state-action value function for a state i
 \end{itemize}
 Theoretically, any supervised learning approach could be employed to estimate value functions. However, not all function approximation techniques are equally appropriate or efficacious when applied to reinforcement learning. Many statistical machine learning algorithms rely on a static training set derived from a stationary distribution. In contrast, reinforcement learning generates data sequentially as the agent interacts with its environment or a model of the environment. It is important that learning can occur in an online environment, and to facilitate this, supervised learning techniques that can approximate non-stationary target functions are required.
 For instance, in control methods based on Generalized Policy Iteration, our objective is to learn $Q_{\pi}$ while $\pi$ undergoes changes. Even if the policy remains constant, the target values of training examples become non-stationary if they are generated by bootstrapping methods like Dynamic Programming or Temporal Difference learning. Thus, it is crucial to recognize that methods incapable of handling such non-stationary data are less suitable for reinforcement learning.
-

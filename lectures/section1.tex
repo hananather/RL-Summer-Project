@@ -1,22 +1,4 @@
-\section{Preliminary Definitions in RL}
-\begin{figure}
-    \centering
-    \tikzstyle{block} = [rectangle, draw, fill=blue!20,
-    text width=8em, text centered, rounded corners, minimum height=4em]
-
-    \tikzstyle{line} = [draw, -latex, color=blue]
-
-    \begin{tikzpicture}[node distance = 6em, auto, thick]
-        \node [block] (Agent) {\textbf{Agent}};
-        \node [block, below of=Agent] (Environment) {\textbf{Environment}};
-        
-        \path [line] (Agent.0) --++ (4em,0em) |- node [near start]{Action $a_t$} (Environment.0);
-        \path [line] (Environment.190) --++ (-6em,0em) |- node [near start] {New state  $s_{t+1}$} (Agent.170);
-        \path [line] (Environment.170) --++ (-4.25em,0em) |- node [near start, right] {Reward $r_{t+1}$} (Agent.190);
-    \end{tikzpicture}
-    \caption{The MDP Framework: As illustrated in the figure, the agent, which represents an AI algorithm, and the environment, an abstract entity delivering uncertain outcomes, engage in a time-sequenced, iterative interaction. Credit: Adapted from Sutton \& Barto, 2018 \cite{RL} }
-    \label{fig:my_label}
-\end{figure}
+\section{Background}
 \subsection{Markov Decision Process}
 A Markov Decision Process (MDP) is a mathematical framework used in reinforcement learning to model decision-making in situations where an agent interacts with an environment that has probabilistic state transitions and rewards \cite{Markov}. 
 
@@ -26,10 +8,26 @@ The motivation for using MDPs in reinforcement learning is to provide a structur
     \begin{enumerate}
         \item a set of states $\cS$, possibly infinite
         \item a set of actions $\SA$, possibly infinite
-        \item  transition probability $\SP_a(s',s) = \PP [S_{t+1} = s'| S_{t} = ,A_{t} = a]$
+        \item  transition probability $\SP_a(s', r \mid s, a) = \PP [S_{t+1} = s', R_t = r_t| S_{t} =s_t ,A_{t} = a_t]$
         \item a reward $R_{t+1} \in \SR \subseteq \RR$, and corresponding probability distribution $ \SR_a(s',s) = \PP[r' | s,a]$ over rewards
     \end{enumerate}
 \end{definition}
+ In the realm of Reinforcement Learning, the terms \textbf{state} and \textbf{observation} bear distinct meanings. A state $s$ is a comprehensive representation of the environment's current condition. By its very definition, it encapsulates all the requisite information about the world, leaving no detail concealed or unaccounted for. On the contrary, an \textbf{observation} $o$ offers a more limited view. It provides a partial portrayal of the state, potentially excluding certain aspects or details. In essence, while a state offers a complete picture, an observation might only present a snippet.
+ 
+When an agent possesses the capability to discern the entirety of the environment's state, we term such an environment as \textbf{fully observed}. Conversely, in situations where the agent perceives only a subset or a partial snapshot of the environment's state, we categorize the environment as \textbf{partially observed}.
+
+
+\note{
+ There are instances where the symbol for states, $s$, is used in contexts where it would be technically more precise to utilize the symbol for observations, $o$. This ambiguity particularly surfaces when discussing the agent's decision-making process. Notationally, it's often conveyed that the agent's action is contingent on the state, symbolized as $s$. However, in a more practical scenario, the agent's action is indeed predicated on the observation, $o$, primarily because the agent doesn't typically possess complete access or knowledge of the true underlying state.}
+
+
+In the domain of Deep Reinforcement Learning (Deep RL), the representation of both states and observations predominantly relies on real-valued vectors or higher-order tensor. This choice of representation facilitates the handling and processing of complex data types and structures. For illustrative purposes, consider a scenario where the environment provides a visual observation; this can be aptly represented using a tensor corresponding to the RGB values of each pixel. Similarly, when we are dealing with a robotic environment, the state might encompass information about the robot's kinematics, typically encapsulated through parameters such as joint angles and velocities.
+
+
+
+The literature offers several definitions of MDPs, particularly regarding the reward function, which is often represented as $\SR(s)$, $\SR(s,a)$, or $\SR(s,a,s')$. While these expressions may differ, they share equivalent expressive power. For instance, a stochastic reward function can be emulated using a deterministic reward formulation by incorporating the reward into the state description.
+
+In addition to the state, action, and reward definitions, some problem settings also consider the \textbf{initial state distribution}, represented as $\mu(s)$. This distribution defines the probability that the initial state $s_0$ is sampled from, playing a significant role in shaping the initial steps of the RL process.
 
 In a \textit{finite} MDP, random variables $R_t$ and $S_t$ possess well-defined discrete probability distributions, which depend solely on the preceding state and action. For specific values $r \in \SR$ and $s' \in \cS$, there exists a probability of these values occurring at time $t$, given particular values of the preceding state and action. The transition probabilities from one time step to the next can be represented as a function $\SP: \cS \times \SR \times 
 \cS \times \SA \to [0,1]$, which is an ordinary deterministic function\cite{RL}:
@@ -45,6 +43,101 @@ Markov Decision Processes (MDPs) have been used to model a wide range of decisio
     \cite{komorowski2018}
 \end{itemize}
 
+\subsection{Episodic Reinforcement Learning}
+
+In the episodic setting of reinforcement learning, the agent's experience is broken up into a series of episodes -- sequences with finite  number of states, actions and rewards. Episodic reinforcement learning in the fully-observed setting is defined by the following process. Each episode begins by sampling an initial state of the environment, $s_0$, from distribution $\mu(s_0)$. Each time step $t = 0,1,2, \dots,$ the agent chooses an action $a_t$, sampled from distribution $\pi(a_t, s_t)$. Then the environment generates the next state and reward, according to some distribution $\SP(s_{t+1}, r_t \mid s_t, a_t)$. The episode ends when a terminal state $s_T$ is reached. 
+
+
+
+
+\tikzset{%
+   neuron missing/.style={
+    draw=none, 
+    scale=2,
+    text height=0.1cm,
+    execute at begin node=\color{black}$\vdots$
+  },
+}
+
+% The command \DrawNeuronalNetwork has a list as argument, each entry is a
+% layer. each entry has the form 
+%  Layer name/number of nodes/color/missing node/label/symbolic number
+% where
+% * layer name is, well,  the name of the layer
+% * number of nodes is the number of neurons in that layer (including the missing neuron)
+% * color is the color of the layer
+% * missing node denotes the index of the missing neuron
+% * label denotes the label of the layer
+% * symbolic number denotes the symbol that indicates how many neurons there are
+% * node content
+\newcommand{\DrawNeuronalNetwork}[2][]{
+\xdef\Xmax{0}
+\foreach \Layer/\X/\Col/\Miss/\Lab/\Count/\Content [count=\Y] in {#2}
+{\pgfmathsetmacro{\Xmax}{max(\X,\Xmax)}
+ \xdef\Xmax{\Xmax}
+ \xdef\Ymax{\Y}
+}
+\foreach \Layer/\X/\Col/\Miss/\Lab/\Count/\Content [count=\Y] in {#2}
+{\node[anchor=south] at ({2*\Y},{\Xmax/2-0.8}) {\Layer};
+ \foreach \m in {1,...,\X}
+ {
+  \ifnum\m=\Miss
+   \node [neuron missing] (neuron-\Y-\m) at ({2*\Y},{\X/2-\m}) {};
+  \else
+   \node [circle,fill=\Col!50,minimum size=0.5cm] (neuron-\Y-\m) at 
+  ({2*\Y},{\X/2-\m}) {\Content};
+ \ifnum\Y=1
+  \else
+   \pgfmathtruncatemacro{\LastY}{\Y-1}
+   \foreach \Z in {1,...,\LastX}
+   {
+    \ifnum\Z=\LastMiss
+    \else
+     \draw[->] (neuron-\LastY-\Z) -- (neuron-\Y-\m);
+    \fi
+    }
+  \fi
+ \fi
+ \ifnum\Y=1
+  \ifnum\m=\X
+   \draw [overlay] (neuron-\Y-\m) -- (state);
+  \else
+   \ifnum\m=\Miss
+   \else
+    \draw [overlay] (neuron-\Y-\m) -- (state);
+   \fi
+  \fi
+ \else
+ \fi     
+ }
+ \xdef\LastMiss{\Miss}
+ \xdef\LastX{\X}
+}
+}
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[x=1.5cm, y=1.2cm,
+    >=stealth,font=\small, nodes={align=center} ]
+     \begin{scope}[local bounding box=T]
+      \path  node[draw,minimum width=6em,minimum height=2em,yshift=-2.2em] (state) {State};
+      \begin{scope}[local bounding box=NN]
+       \DrawNeuronalNetwork{Input Layer/5/red/4///,
+         Hidden Layer/5/green/4//11/,
+         Output Layer/4/blue/3//11/}
+      \end{scope}
+      \path (NN.south) node[below]{Estimated parameter\\ $\theta$};
+      \path(NN.east) -- node[above]{Policy\\ $\pi_{\theta}(a|s)$}++ (4em,0);
+     \end{scope} 
+     \node[fit=(T),label={[anchor=north west]north west:Agent},inner sep=1em,draw,]
+      (TF){};
+     \node[below=3em of TF,draw,inner sep=1em, yshift= 2em] (Env) {Environment};
+     \draw[<-] (TF.180) -- ++ (-2em,0) |- (Env.180) node[pos=0.45,left]{$(s_{t+1}, r_t)$};
+     \draw[->] (NN.east) -- ++ (7em,0)node[right]{$a_t$} |- (Env);
+    \end{tikzpicture}
+\end{figure}
+
+
+
 \subsection{Policy and Return}
 In reinforcement learning algorithms, assessing the value of an agent being in a particular state is crucial. 
 Almost all reinforcement learning algorithms involve estimates of how good is it for the agent to be in a given state \cite{RL}.
@@ -58,6 +151,13 @@ For a given state $s \in S$ and action $a \in A$, the policy is defined as \cite
     A policy is a mapping $\pi: S \to \Delta(A),$ where $\Delta(A)$ is the set of probability distributions over the action space $A$. A policy is deterministic if for any $s \in S$, there exists a unique $a \in A$ such that $\pi(a|s) = 1$. In this case, we can identify $\pi: S \to A$.
     \footnote{The given definition pertains to a stationary policy, as the action distribution does not rely on time. Generally, a non-stationary policy can be characterized as a sequence of mappings $\pi_t : S \rightarrow \Delta(A)$, indexed by $t$. Notably, in scenarios with a finite horizon, employing a non-stationary policy is often essential for reward optimization}
 \end{definition}
+
+
+
+
+
+
+
 The objective in RL is to learn a policy, more precisely, the agent's objective is to find a policy that \textit{maximizes its expected (reward) return}. The discounted return is defined as \cite{RL}:
 \begin{equation}
     G_t = R_{t+1} + \gamma R_{t+2 } + \gamma^2 R_{t+3 } + \cdots = \gamma^k \sum_{k=0}^{\infty} R_{t+k+1}
@@ -72,6 +172,9 @@ An important fact to note is that even though this is an infinite sum, if $\gamm
 \end{align}
 By breaking down the computation of expected returns into smaller, incremental steps, the recursive property enables efficient updating of value estimates during the learning process. This is particularly useful in temporal difference learning methods, such as Q-learning and SARSA, where the value function is updated incrementally after each transition. This recursive property allows RL algorithms to leverage current estimates of future returns, $G_{t+1}$, to improve the current value estimate $G_t$. This process, known as bootstrapping, helps algorithms converge faster by taking advantage of information already available, rather than waiting to accumulate the complete return through the end of an episode. We will delve deeper into this idea in Section \ref{Algo}, where we explore Temporal Difference learning and Q-learning.
 
+
+In deep RL, we deal with parameterized policies: policies whose outputs are computable functions that depend on a set of parameters (e.g., weights and biases of a neural network) which we can adjust to change the behavior via some optimization algorithm. 
+
 \subsection{Goal of Reinforcement Learning}
 
 In reinforcement learning, we define the agent's experience as a trajectory, which includes a sequence of states, actions, and rewards. At each time step $t$, the agent is in a state $s_t$ and takes action $a_t$ according to policy $\pi(a_t \mid s_t)$, and transition probabilities to a new state $s_{t+1}$ according to environment's transition probabilities $p(s_{t+1} \mid s_{t}, a_{t})$. A reward $r_t$ is also received.
@@ -79,8 +182,12 @@ In reinforcement learning, we define the agent's experience as a trajectory, whi
     p_{\theta}(\boldsymbol{s}_1, \boldsymbol{a}_1, \cdots ,\boldsymbol{s}_T, \boldsymbol{a}_T) = p(\boldsymbol{s}_1) \prod_{t=1}^{T} \pi_{\theta}(\boldsymbol{a}_{t} \mid \boldsymbol{s}_t) p(\boldsymbol{s}_{t+1} \mid \boldsymbol{s}_t)
 \end{align*}
 
+\note{
+A \vocab{trajectory} $\tau$, also called an episode, is sequence of states, actions and rewards from the start to the end of an episode, $\tau \equiv (\boldsymbol{s}_1, \boldsymbol{a}_1, \cdots ,\boldsymbol{s}_T, \boldsymbol{a}_T)$. We will use the notation $p_{\theta}(\tau)$ to denote the probability of the entire trajectory $\tau$ under policy parameters $\theta$, and let $R(\tau)$ denote the total reward of the trajectory.}
 
-A trajectory, also called an episode, is sequence of states, actions and rewards from the start to the end of an episode. The distribution over trajectories under policy $\pi_\theta$ is given by the product of an initial state distribution, the policy probabilities for the actions, and the environment's transition probabilities for the state. 
+
+The distribution over trajectories under policy $\pi_\theta$ is given by the product of an initial state distribution, the policy probabilities for the actions, and the environment's transition probabilities for the state. 
+
 
 \begin{align*}\label{RL-Objective}
     \theta^{\star} = \arg \max_{\theta} \EE_{\tau \sim p_{\theta}(\tau)} \left[ 
@@ -194,6 +301,4 @@ The Bellman optimally equation for $Q^*(s,a)$ is:
      
     \item $Q^*(s,a)$: With $Q^*$ at hand, the agent can bypass one-step ahead search. For any state $s \in S$, it can directly identify the action(s) that maximizes $Q^*(s,a)$. The action-value function serves as a cache for the results of one-step-ahead searches \cite{RL}, offering the expected long-term return as a value that is both locally and instantly accessible for each state-action pair.
 \end{itemize}
-
-
 

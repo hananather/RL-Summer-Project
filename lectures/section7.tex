@@ -1,0 +1,38 @@
+\section{Proximal Policy Optimization}
+
+Policy gradient algorithms are known to be susceptible to performance collapse, where an agent's performance can suddenly degrade. This situation is challenging to recover from, as the agent begins to generate suboptimal trajectories which further degrade the policy. On-policy algorithms, in particular, are sample-inefficient as they do not allow for reusing data.
+
+Proximal Policy Optimization (PPO) is a class of optimization algorithms proposed by Schulman et al. that attempts to mitigate these issues. PPO introduces a surrogate objective function, which helps avoid performance collapse by ensuring monotonic policy improvement and allows for the reuse of off-policy data.
+
+The main idea behind PPO is to restrict the policy update at each step to a region around the current policy, ensuring that the new policy does not deviate significantly from the old one. This restriction is enforced by introducing a clipped probability ratio in the objective function, which is then optimized to update the policy. The new PPO objective can be written as:
+
+\[
+\mathcal{L}^{PPO}(\theta) = \mathbb{E}_{t} \left[ \min \left( r_t(\theta) \hat{A}_t, \text{clip} \left( r_t(\theta), 1 - \epsilon, 1 + \epsilon \right) \hat{A}_t \right) \right]
+\]
+
+where $r_t(\theta) = \frac{\pi_{\theta}(a_t|s_t)}{\pi_{\theta_{\text{old}}}(a_t|s_t)}$ is the probability ratio, $\hat{A}_t$ is the advantage function estimate at time $t$, and $\epsilon$ is a hyperparameter that controls the size of the trust region.
+
+By replacing the original objective $J(\pi_{\theta})$ with the PPO objective, both REINFORCE and Actor-Critic algorithms can benefit from more stable and sample-efficient training.
+
+\subsection{A variant of PPO - KL penalty }
+In Supervised Learning, the cost function is typically straightforward to implement. Once defined, we can apply gradient descent and with minimal hyperparameter tuning, we can have high confidence in achieving solid results. The pathway to success in RL, however, is not as clear-cut. Reinforcement Learning algorithms contain several interacting components, making them challenging to debug, and requiring a significant effort in tuning to yield good results. Proximal Policy Optimization (PPO) attempts to address these challenges by finding a balance between implementation simplicity, sample complexity, and tuning ease. The PPO method seeks to compute an update at each step that minimizes the cost function, while simultaneously ensuring that the deviation from the previous policy remains relatively small.
+
+A variant of PPO that uses an adaptive KL penalty to control the change of the policy at each iteration, known as the The PPO-Clip objective function is:
+\begin{align*}
+L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min \left( r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t \right) \right]
+\end{align*}
+
+Where:
+\begin{itemize}
+    \item $\theta$ is the policy parameter.
+    \item $\hat{\mathbb{E}}_t$ denotes the empirical expectation over timesteps.
+    \item $r_t(\theta)$ is the ratio of the probabilities under the new and old policies, respectively.
+    \item $\hat{A}_t$ is the estimated advantage at time $t$.
+    \item $\epsilon$ is a hyperparameter, usually $0.1$ or $0.2$.
+\end{itemize}
+The clip operation ensures the ratio $r_t(\theta)$ is within the interval $[1-\epsilon, 1+\epsilon]$.
+
+This objective function is designed to control how much the policy can change in a single update to ensure stable learning. The objective function includes two terms, and optimization attempts to maximize the minimum of these two terms. The first term $r_t(\theta) \hat{A}_t$ is just the standard policy gradient objective. The second term $\text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t$ is a clipped version of the first term, which discourages policy changes if the new and old policy ratios ($r_t(\theta)$) are too different (i.e., outside the $[1-\epsilon, 1+\epsilon]$ range).
+\begin{verbatim}
+    https://openai.com/research/openai-baselines-ppo
+\end{verbatim}
